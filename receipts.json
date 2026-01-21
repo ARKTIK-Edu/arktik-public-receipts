@@ -1,0 +1,19 @@
+{
+  "as_of": "2026-01-21T12:00:00-06:00",
+  "totals": {
+    "donations_usd": 0,
+    "seats_sponsored": 0,
+    "completions_verified": 0,
+    "in_progress": 0
+  },
+  "rails": [
+    { "key": "emergency", "name": "Emergency Transition Bridge", "donations_usd": 0, "seats": 0, "completions": 0, "artifacts": 0 },
+    { "key": "access", "name": "Scholarships & Access", "donations_usd": 0, "seats": 0, "completions": 0, "artifacts": 0 },
+    { "key": "deployments", "name": "Food Security & Deployments (LHEA-HEAL)", "donations_usd": 0, "seats": 0, "completions": 0, "artifacts": 0 },
+    { "key": "jobs", "name": "Workforce & Local Jobs", "donations_usd": 0, "seats": 0, "completions": 0, "artifacts": 0 },
+    { "key": "innovation", "name": "Innovation & Infrastructure", "donations_usd": 0, "seats": 0, "completions": 0, "artifacts": 0 }
+  ],
+  "trend_monthly": [
+    { "month": "2026-01", "seats": 0, "completions": 0, "donations_usd": 0 }
+  ]
+}
