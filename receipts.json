@@ -1,19 +1,160 @@
-{
-  "as_of": "2026-01-21T12:00:00-06:00",
-  "totals": {
-    "donations_usd": 0,
-    "seats_sponsored": 0,
-    "completions_verified": 0,
-    "in_progress": 0
-  },
-  "rails": [
-    { "key": "emergency", "name": "Emergency Transition Bridge", "donations_usd": 0, "seats": 0, "completions": 0, "artifacts": 0 },
-    { "key": "access", "name": "Scholarships & Access", "donations_usd": 0, "seats": 0, "completions": 0, "artifacts": 0 },
-    { "key": "deployments", "name": "Food Security & Deployments (LHEA-HEAL)", "donations_usd": 0, "seats": 0, "completions": 0, "artifacts": 0 },
-    { "key": "jobs", "name": "Workforce & Local Jobs", "donations_usd": 0, "seats": 0, "completions": 0, "artifacts": 0 },
-    { "key": "innovation", "name": "Innovation & Infrastructure", "donations_usd": 0, "seats": 0, "completions": 0, "artifacts": 0 }
-  ],
-  "trend_monthly": [
-    { "month": "2026-01", "seats": 0, "completions": 0, "donations_usd": 0 }
-  ]
-}
+<div class="arktik-dash">
+  <div class="arktik-dash__header">
+    <div>
+      <div class="arktik-kicker">Receipts, not promises.</div>
+      <h1 class="arktik-title">Live Receipts Dashboard</h1>
+      <div class="arktik-sub">
+        Privacy-first aggregate reporting. No client-sensitive records collected.
+      </div>
+    </div>
+    <div class="arktik-meta">
+      <div class="arktik-pill" id="arktikAsOf">As of —</div>
+      <div class="arktik-pill" id="arktikStatus">Loading…</div>
+    </div>
+  </div>
+
+  <div class="arktik-grid">
+    <div class="arktik-card">
+      <div class="arktik-label">Total Raised</div>
+      <div class="arktik-metric" id="donations">$0</div>
+      <div class="arktik-note">Restricted funds • tax-deductible • receipts cadence</div>
+    </div>
+    <div class="arktik-card">
+      <div class="arktik-label">Seats Sponsored</div>
+      <div class="arktik-metric" id="seats">0</div>
+      <div class="arktik-note">1 seat = 1 verifiable outcome unit</div>
+    </div>
+    <div class="arktik-card">
+      <div class="arktik-label">Completions Verified</div>
+      <div class="arktik-metric" id="completions">0</div>
+      <div class="arktik-note">Published as aggregate only</div>
+    </div>
+    <div class="arktik-card">
+      <div class="arktik-label">In Progress</div>
+      <div class="arktik-metric" id="inprogress">0</div>
+      <div class="arktik-note">Active seats currently in execution</div>
+    </div>
+  </div>
+
+  <div class="arktik-card arktik-card--wide">
+    <div class="arktik-wide-header">
+      <div class="arktik-label">By Fund Rail</div>
+      <div class="arktik-wide-note">Auto-refreshes every 30 seconds</div>
+    </div>
+    <div id="railRows" class="arktik-rails"></div>
+  </div>
+</div>
+
+<style>
+  .arktik-dash{max-width:1100px;margin:0 auto;padding:28px 12px;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
+  .arktik-dash__header{display:flex;gap:16px;justify-content:space-between;align-items:flex-end;flex-wrap:wrap}
+  .arktik-kicker{letter-spacing:.12em;text-transform:uppercase;font-weight:700;font-size:12px;opacity:.75}
+  .arktik-title{margin:6px 0 6px;font-size:34px;line-height:1.1}
+  .arktik-sub{opacity:.75;max-width:680px}
+  .arktik-meta{display:flex;gap:10px;flex-wrap:wrap}
+  .arktik-pill{border:1px solid rgba(0,0,0,.12);border-radius:999px;padding:8px 12px;font-size:12px;background:rgba(255,255,255,.7)}
+  .arktik-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:18px}
+  .arktik-card{border:1px solid rgba(0,0,0,.10);border-radius:18px;padding:16px;background:#fff;box-shadow:0 8px 30px rgba(0,0,0,.06)}
+  .arktik-card--wide{margin-top:12px}
+  .arktik-label{font-size:12px;letter-spacing:.10em;text-transform:uppercase;font-weight:700;opacity:.65}
+  .arktik-metric{font-size:38px;font-weight:800;margin-top:6px}
+  .arktik-note{margin-top:6px;opacity:.7;font-size:13px}
+  .arktik-wide-header{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center}
+  .arktik-wide-note{opacity:.65;font-size:13px}
+  .arktik-rails{margin-top:12px;display:flex;flex-direction:column;gap:10px}
+  .rail{display:grid;grid-template-columns:1.4fr .8fr .6fr .6fr .6fr;gap:10px;align-items:center;padding:12px;border-radius:14px;background:rgba(0,0,0,.03)}
+  .rail strong{font-size:14px}
+  .rail .muted{opacity:.7;font-size:12px}
+  .pulse{animation:pulse .7s ease-out}
+  @keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.03)}100%{transform:scale(1)}}
+  @media (max-width:980px){.arktik-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.rail{grid-template-columns:1fr 1fr}}
+</style>
+
+<script>
+  // Canonical raw URL (more reliable than /refs/heads/)
+  const RECEIPTS_JSON_URL = "https://raw.githubusercontent.com/ARKTIK-Edu/arktik-public-receipts/main/receipts.json";
+  const POLL_MS = 30000;
+
+  const els = {
+    asOf: document.getElementById("arktikAsOf"),
+    status: document.getElementById("arktikStatus"),
+    donations: document.getElementById("donations"),
+    seats: document.getElementById("seats"),
+    completions: document.getElementById("completions"),
+    inprogress: document.getElementById("inprogress"),
+    railRows: document.getElementById("railRows"),
+  };
+
+  const fmtMoney = (n) => new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0}).format(n||0);
+  const fmtInt = (n) => new Intl.NumberFormat("en-US").format(n||0);
+
+  function animateNumber(el, from, to, formatFn){
+    const start = performance.now();
+    const dur = 600;
+    function tick(t){
+      const p = Math.min((t-start)/dur,1);
+      const v = Math.round(from + (to-from)*p);
+      el.textContent = formatFn(v);
+      if(p<1) requestAnimationFrame(tick);
+      else { el.classList.remove("pulse"); void el.offsetWidth; el.classList.add("pulse"); }
+    }
+    requestAnimationFrame(tick);
+  }
+
+  function safeGetPrev(){
+    try { return JSON.parse(localStorage.getItem("arktik_receipts_prev")||"null"); } catch { return null; }
+  }
+  function savePrev(d){
+    try { localStorage.setItem("arktik_receipts_prev", JSON.stringify(d)); } catch {}
+  }
+
+  function renderRails(rails){
+    els.railRows.innerHTML = "";
+    rails.forEach(r=>{
+      const row = document.createElement("div");
+      row.className = "rail";
+      row.innerHTML = `
+        <div>
+          <strong>${r.name}</strong>
+          <div class="muted">Key: ${r.key}</div>
+        </div>
+        <div><div class="muted">Raised</div><div><strong>${fmtMoney(r.donations_usd)}</strong></div></div>
+        <div><div class="muted">Seats</div><div><strong>${fmtInt(r.seats)}</strong></div></div>
+        <div><div class="muted">Verified</div><div><strong>${fmtInt(r.completions)}</strong></div></div>
+        <div><div class="muted">Artifacts</div><div><strong>${fmtInt(r.artifacts)}</strong></div></div>
+      `;
+      els.railRows.appendChild(row);
+    });
+  }
+
+  async function load(){
+    els.status.textContent = "Refreshing…";
+    try{
+      const url = RECEIPTS_JSON_URL + "?t=" + Date.now(); // bust cache
+      const res = await fetch(url, {cache:"no-store"});
+      if(!res.ok) throw new Error("HTTP "+res.status);
+      const data = await res.json();
+
+      const prev = safeGetPrev();
+      const prevTotals = prev?.totals || {donations_usd:0,seats_sponsored:0,completions_verified:0,in_progress:0};
+
+      els.asOf.textContent = "As of " + new Date(data.as_of).toLocaleString();
+      els.status.textContent = "Live • auto-updating";
+
+      animateNumber(els.donations, prevTotals.donations_usd, data.totals.donations_usd, fmtMoney);
+      animateNumber(els.seats, prevTotals.seats_sponsored, data.totals.seats_sponsored, fmtInt);
+      animateNumber(els.completions, prevTotals.completions_verified, data.totals.completions_verified, fmtInt);
+      animateNumber(els.inprogress, prevTotals.in_progress, data.totals.in_progress, fmtInt);
+
+      renderRails(data.rails || []);
+      savePrev(data);
+
+    } catch(e){
+      els.status.textContent = "Offline • showing last known numbers";
+      console.warn(e);
+    }
+  }
+
+  load();
+  setInterval(load, POLL_MS);
+</script>
